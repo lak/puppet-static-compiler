@@ -6,3 +6,7 @@ This is a prototype project to create a new kind of compiler for Puppet.  There 
 * Dramatically simplify and speed up fileserving
 
 These will both be accomplished via post-compile processing, by finding all files with sources included and updating the files on the spot to include metadata, including owner, mode, and checksums.
+
+This requires my Interfaces module:
+
+https://github.com/lak/puppet-interfaces

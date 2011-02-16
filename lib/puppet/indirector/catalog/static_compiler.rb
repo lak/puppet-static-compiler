@@ -2,7 +2,7 @@ require 'puppet/node'
 require 'puppet/resource/catalog'
 require 'puppet/indirector/code'
 
-class Puppet::Resource::Catalog::Newcompiler < Puppet::Indirector::Code
+class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   def compiler
     @compiler ||= indirection.terminus(:compiler)
   end

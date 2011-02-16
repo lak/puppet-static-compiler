@@ -25,7 +25,7 @@ Make sure both this and the interfaces module are in your RUBYLIB search path
   $ echo 'file { "/tmp/bar": source => "puppet:///modules/mymod/myfile" }' > /tmp/test.pp
 
   # Start the master with the new compiler terminus:
-  $ ~/puppet/bin/puppet master --catalog_terminus=newcompiler --config=/Users/luke/.puppet/puppet.conf --manifest /tmp/test.pp
+  $ ~/puppet/bin/puppet master --catalog_terminus=static_compiler --config=/Users/luke/.puppet/puppet.conf --manifest /tmp/test.pp
 
   # Try to download catalog
   $ puppet catalog --bucketdir /tmp/buckets --verbose download localhost

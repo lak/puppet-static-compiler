@@ -1,5 +1,5 @@
 # Download a specified file into the local filebucket.
-Puppet::Interface::File_bucket_file.action :download do |*args|
+Puppet::Interface::File.action :download do |*args|
   Puppet::FileBucket::File.indirection.terminus_class = :rest
 
   sum = args.shift or raise "Must specify checksum"

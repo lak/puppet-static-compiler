@@ -1,5 +1,5 @@
 # Store a specified file in our filebucket.
-Puppet::Interface::File_bucket_file.action :store do |*args|
+Puppet::Interface::File.action :store do |*args|
   path = args.shift or raise "Must specify file"
 
   file = Puppet::FileBucket::File.new(File.read(path))

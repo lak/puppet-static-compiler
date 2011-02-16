@@ -1,4 +1,4 @@
-require 'puppet/interface/file_bucket_file'
+require 'puppet/interface/file'
 
 # Download a new catalog, with one new behavior:
 # make sure all of the specified files are also
@@ -9,7 +9,7 @@ Puppet::Interface::Catalog.action :download do |*args|
   host = args.shift or raise "Must specify hostname"
   raise "Could not download catalog for '#{host}'" unless catalog = Puppet::Resource::Catalog.indirection.find(host)
 
-  bucket = Puppet::Interface::File_bucket_file.new
+  bucket = Puppet::Interface::File.new
 
   # For every checksum mentioned in the catalog, make sure they're in our local filebucket.
   catalog.resources.find_all { |res| res.type == "File" }.each do |resource|

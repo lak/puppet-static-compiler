@@ -27,14 +27,21 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
 
     raise "Could not get metadata for #{source}" unless metadata = file.parameter(:source).metadata
 
+    p metadata
+
     Puppet.notice "Adding metadata for #{resource} from #{source}"
 
     [:mode, :owner, :group].each do |param|
       resource[param] ||= metadata.send(param)
     end
-    unless file[:content]
-      resource[:content] = metadata.checksum
-      resource[:checksum] = metadata.checksum_type
+
+    if metadata.ftype == "file"
+      unless file[:content]
+        resource[:content] = metadata.checksum
+        resource[:checksum] = metadata.checksum_type
+      end
+    else
+      resource[:ensure] = metadata.ftype
     end
 
     resource.delete(:source)

@@ -11,16 +11,25 @@ Puppet::Interface::File.action :download do |*args|
     file = Puppet::FileBucket::File.new(content.content)
   else
     Puppet.info "Downloading content via checksum"
-    Puppet::FileBucket::File.indirection.terminus_class = :rest
 
     tester = Object.new
     tester.extend(Puppet::Util::Checksums)
 
     type = tester.sumtype(sum)
-    sum = tester.sumdata(sum)
+    sumdata = tester.sumdata(sum)
 
-    raise "Could not download content for '#{sum}'" unless file = Puppet::FileBucket::File.indirection.find("#{type}/#{sum}")
+    key = "#{type}/#{sumdata}"
+
+    Puppet::FileBucket::File.indirection.terminus_class = :file
+    if Puppet::FileBucket::File.find(key)
+      Puppet.info "Content for '#{sum}' already exists"
+      return
+    end
+
+    Puppet::FileBucket::File.indirection.terminus_class = :rest
+    raise "Could not download content for '#{sum}'" unless file = Puppet::FileBucket::File.indirection.find(key)
   end
+
 
   Puppet::FileBucket::File.indirection.terminus_class = :file
   Puppet::FileBucket::File.indirection.save file

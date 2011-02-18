@@ -48,7 +48,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
       end
     end
 
-    store_content(resource[:source]) if resource[:ensure] == "file"
+    store_content(resource) if resource[:ensure] == "file"
     resource.delete(:source)
   end
 
@@ -114,9 +114,19 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     both.each { |name| children.delete(name) }
   end
 
-  def store_content(source)
-    Puppet.info "Storing content for source #{source}"
-    content = Puppet::FileServing::Content.find(source)
-    Puppet::FileBucket::File.new(content.content).save
+  def store_content(resource)
+    @summer ||= Object.new
+    @summer.extend(Puppet::Util::Checksums)
+
+    type = @summer.sumtype(resource[:content])
+    sum = @summer.sumdata(resource[:content])
+
+    if Puppet::FileBucket::File.find("#{type}/#{sum}")
+      Puppet.info "Content for '#{resource[:source]}' already exists"
+    else
+      Puppet.info "Storing content for source '#{resource[:source]}'"
+      content = Puppet::FileServing::Content.find(resource[:source])
+      Puppet::FileBucket::File.new(content.content).save
+    end
   end
 end

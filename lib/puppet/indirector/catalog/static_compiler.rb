@@ -13,30 +13,35 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     raise "Did not get catalog back" unless catalog.is_a?(model)
 
     catalog.resources.find_all { |res| res.type == "File" }.each do |resource|
-      replace_metadata(resource)
+      next unless source = resource[:source]
+      next unless source =~ /^puppet:/
+
+      file = resource.to_ral
+      if file.recurse?
+        add_children(catalog, resource, file)
+      else
+        find_and_replace_metadata(resource, file)
+      end
     end
 
     catalog
   end
 
-  def replace_metadata(resource)
-    return unless source = resource[:source]
-    return unless source =~ /^puppet:/
-
-    file = resource.to_ral
-
+  def find_and_replace_metadata(resource, file)
     raise "Could not get metadata for #{source}" unless metadata = file.parameter(:source).metadata
 
-    p metadata
+    add_metadata(resource, metadata)
+  end
 
-    Puppet.notice "Adding metadata for #{resource} from #{source}"
+  def replace_metadata(resource, metadata)
+    Puppet.notice "Adding metadata for #{resource} from #{resource[:source]}"
 
     [:mode, :owner, :group].each do |param|
       resource[param] ||= metadata.send(param)
     end
 
     if metadata.ftype == "file"
-      unless file[:content]
+      unless resource[:content]
         resource[:content] = metadata.checksum
         resource[:checksum] = metadata.checksum_type
       end
@@ -45,5 +50,62 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     end
 
     resource.delete(:source)
+  end
+
+  def add_children(catalog, resource, file)
+    file = resource.to_ral
+
+    children = get_child_resources(catalog, resource, file)
+
+    remove_existing_resources(children, catalog)
+
+    children.each do |name, res|
+      catalog.add_resource res
+      catalog.add_edge(resource, res)
+    end
+  end
+
+  def get_child_resources(catalog, resource, file)
+    sourceselect = file[:sourceselect]
+    children = {}
+
+    # This is largely a copy of recurse_remote in File
+    total = file[:source].collect do |source|
+      next unless result = file.perform_recursion(source)
+      return if top = result.find { |r| r.relative_path == "." } and top.ftype != "directory"
+      result.each { |data| data.source = "#{source}/#{data.relative_path}" }
+      break result if result and ! result.empty? and sourceselect == :first
+      result
+    end.flatten
+
+    # This only happens if we have sourceselect == :all
+    unless sourceselect == :first
+      found = []
+      total.reject! do |data|
+        result = found.include?(data.relative_path)
+        found << data.relative_path unless found.include?(data.relative_path)
+        result
+      end
+    end
+
+    total.each do |meta|
+      # This is the top-level parent directory
+      if meta.relative_path == "."
+        replace_metadata(resource, meta)
+        next
+      end
+      children[meta.relative_path] ||= Puppet::Resource.new(:file, File.join(file[:path], meta.relative_path))
+      replace_metadata(children[meta.relative_path], meta)
+    end
+
+    children
+  end
+
+  def remove_existing_resources(children, catalog)
+    existing_names = catalog.resources.collect { |r| r.to_s }
+
+    both = (existing_names & children.keys).inject({}) { |hash, name| hash[name] = true; hash }
+    
+    both.each { |name| children.delete(name) }
   end
 end

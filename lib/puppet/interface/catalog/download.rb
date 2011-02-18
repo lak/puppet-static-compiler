@@ -9,6 +9,10 @@ Puppet::Interface::Catalog.action :download do |*args|
   host = args.shift or raise "Must specify hostname"
   raise "Could not download catalog for '#{host}'" unless catalog = Puppet::Resource::Catalog.indirection.find(host)
 
+  # Save the catalog before downloading files
+  Puppet::Resource::Catalog.indirection.terminus_class = :yaml
+  Puppet::Resource::Catalog.indirection.save catalog
+
   bucket = Puppet::Interface::File.new
 
   # For every checksum mentioned in the catalog, make sure they're in our local filebucket.
@@ -20,7 +24,5 @@ Puppet::Interface::Catalog.action :download do |*args|
     Puppet.notice "Downloading content for #{resource} from '#{checksum}'"
     bucket.download(checksum)
   end
-
-  Puppet::Resource::Catalog.indirection.terminus_class = :yaml
-  Puppet::Resource::Catalog.indirection.save catalog
+  nil
 end

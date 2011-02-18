@@ -28,7 +28,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   end
 
   def find_and_replace_metadata(resource, file)
-    raise "Could not get metadata for #{source}" unless metadata = file.parameter(:source).metadata
+    raise "Could not get metadata for #{resource[:source]}" unless metadata = file.parameter(:source).metadata
 
     add_metadata(resource, metadata)
   end
@@ -40,15 +40,15 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
       resource[param] ||= metadata.send(param)
     end
 
+    resource[:ensure] = metadata.ftype
     if metadata.ftype == "file"
       unless resource[:content]
         resource[:content] = metadata.checksum
         resource[:checksum] = metadata.checksum_type
       end
-    else
-      resource[:ensure] = metadata.ftype
     end
 
+    store_content(resource[:source]) if resource[:ensure] == "file"
     resource.delete(:source)
   end
 
@@ -68,6 +68,8 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   def get_child_resources(catalog, resource, file)
     sourceselect = file[:sourceselect]
     children = {}
+
+    source = resource[:source]
 
     # This is largely a copy of recurse_remote in File
     total = file[:source].collect do |source|
@@ -95,6 +97,9 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
         next
       end
       children[meta.relative_path] ||= Puppet::Resource.new(:file, File.join(file[:path], meta.relative_path))
+
+      # I think this is safe since it's a URL, not an actual file
+      children[meta.relative_path][:source] = source + "/" + meta.relative_path
       replace_metadata(children[meta.relative_path], meta)
     end
 
@@ -107,5 +112,11 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     both = (existing_names & children.keys).inject({}) { |hash, name| hash[name] = true; hash }
     
     both.each { |name| children.delete(name) }
+  end
+
+  def store_content(source)
+    Puppet.info "Storing content for source #{source}"
+    content = Puppet::FileServing::Content.find(source)
+    Puppet::FileBucket::File.new(content.content).save
   end
 end

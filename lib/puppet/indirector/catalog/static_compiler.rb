@@ -30,7 +30,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   def find_and_replace_metadata(resource, file)
     raise "Could not get metadata for #{resource[:source]}" unless metadata = file.parameter(:source).metadata
 
-    add_metadata(resource, metadata)
+    replace_metadata(resource, metadata)
   end
 
   def replace_metadata(resource, metadata)

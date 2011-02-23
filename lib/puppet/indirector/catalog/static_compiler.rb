@@ -30,7 +30,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   def find_and_replace_metadata(resource, file)
     raise "Could not get metadata for #{resource[:source]}" unless metadata = file.parameter(:source).metadata
 
-    add_metadata(resource, metadata)
+    replace_metadata(resource, metadata)
   end
 
   def replace_metadata(resource, metadata)
@@ -121,7 +121,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     type = @summer.sumtype(resource[:content])
     sum = @summer.sumdata(resource[:content])
 
-    if Puppet::FileBucket::File.find("#{type}/#{sum}")
+    if Puppet::FileBucket::File.indirection.find("#{type}/#{sum}")
       Puppet.info "Content for '#{resource[:source]}' already exists"
     else
       Puppet.info "Storing content for source '#{resource[:source]}'"

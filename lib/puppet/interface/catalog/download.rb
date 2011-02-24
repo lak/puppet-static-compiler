@@ -13,7 +13,7 @@ Puppet::Interface::Catalog.action :download do |*args|
   Puppet::Resource::Catalog.indirection.terminus_class = :yaml
   Puppet::Resource::Catalog.indirection.save catalog
 
-  bucket = Puppet::Interface::File.new
+  bucket = Puppet::Interface::File
 
   # For every checksum mentioned in the catalog, make sure they're in our local filebucket.
   catalog.resources.find_all { |res| res.type == "File" }.each do |resource|

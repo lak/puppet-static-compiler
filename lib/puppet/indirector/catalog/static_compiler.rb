@@ -28,6 +28,12 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
   end
 
   def find_and_replace_metadata(resource, file)
+    # We remove URL info from it, so it forces a local copy
+    # rather than routing through the network.
+    # Weird, but true.
+    newsource = file[:source][0].sub("puppet:///", "")
+    file[:source][0] = newsource
+
     raise "Could not get metadata for #{resource[:source]}" unless metadata = file.parameter(:source).metadata
 
     replace_metadata(resource, metadata)

@@ -11,6 +11,7 @@ Puppet::Interface::Catalog.action :download do |*args|
 
   # Save the catalog before downloading files
   Puppet::Resource::Catalog.indirection.terminus_class = :yaml
+  Puppet.notice "Saving catalog for '#{host}' to disk"
   Puppet::Resource::Catalog.indirection.save catalog
 
   bucket = Puppet::Interface::File

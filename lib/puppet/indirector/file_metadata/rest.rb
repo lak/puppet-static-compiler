@@ -36,8 +36,8 @@ class Puppet::Indirector::FileMetadata::Rest < Puppet::Indirector::REST
   def memcache_key(request)
     # We do our own namespacing, because we know more than the memcache
     # client does about the different types of input we might have.
-    namespace = "puppet@#{request.indirection_name}"
-    generation = memcache.fetch("#{namespace}@generation") do 1 end
+    namespace = "puppet@file_metadata"
+    generation = memcache.fetch("#{namespace}@generation", nil, :raw => true) do 1 end
     "#{namespace}@#{generation}@#{request.uri}"
   end
 

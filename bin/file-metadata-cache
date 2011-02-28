@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'dalli'
+
+# REVISIT: This is totally hard-coded; it should use the puppet configuration
+# infrastructure to locate the appropriate cache to invalidate.
+#Dalli::Client.new('localhost:11211').incr("puppet@file_metadata@generation")
+m = Dalli::Client.new('localhost:11211')
+
+Counter = "puppet@file_metadata@generation"
+
+old = m.fetch(Counter, nil, :raw => true) do 1 end
+puts "generation count: #{old}"
+m.incr(Counter)
+puts "generation count updated to #{m.get(Counter)}"
+exit 0
+

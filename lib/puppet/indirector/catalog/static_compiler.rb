@@ -18,16 +18,16 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
 
       file = resource.to_ral
       if file.recurse?
-        add_children(catalog, resource, file)
+        add_children(request.key, catalog, resource, file)
       else
-        find_and_replace_metadata(resource, file)
+        find_and_replace_metadata(request.key, resource, file)
       end
     end
 
     catalog
   end
 
-  def find_and_replace_metadata(resource, file)
+  def find_and_replace_metadata(host, resource, file)
     # We remove URL info from it, so it forces a local copy
     # rather than routing through the network.
     # Weird, but true.
@@ -36,12 +36,10 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
 
     raise "Could not get metadata for #{resource[:source]}" unless metadata = file.parameter(:source).metadata
 
-    replace_metadata(resource, metadata)
+    replace_metadata(host, resource, metadata)
   end
 
-  def replace_metadata(resource, metadata)
-    Puppet.notice "Adding metadata for #{resource} from #{resource[:source]}"
-
+  def replace_metadata(host, resource, metadata)
     [:mode, :owner, :group].each do |param|
       resource[param] ||= metadata.send(param)
     end
@@ -55,13 +53,14 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     end
 
     store_content(resource) if resource[:ensure] == "file"
-    resource.delete(:source)
+    old_source = resource.delete(:source)
+    Puppet.info "Metadata for #{resource} in catalog for '#{host}' added from '#{old_source}'"
   end
 
-  def add_children(catalog, resource, file)
+  def add_children(host, catalog, resource, file)
     file = resource.to_ral
 
-    children = get_child_resources(catalog, resource, file)
+    children = get_child_resources(host, catalog, resource, file)
 
     remove_existing_resources(children, catalog)
 
@@ -71,7 +70,7 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     end
   end
 
-  def get_child_resources(catalog, resource, file)
+  def get_child_resources(host, catalog, resource, file)
     sourceselect = file[:sourceselect]
     children = {}
 
@@ -99,14 +98,14 @@ class Puppet::Resource::Catalog::StaticCompiler < Puppet::Indirector::Code
     total.each do |meta|
       # This is the top-level parent directory
       if meta.relative_path == "."
-        replace_metadata(resource, meta)
+        replace_metadata(host, resource, meta)
         next
       end
       children[meta.relative_path] ||= Puppet::Resource.new(:file, File.join(file[:path], meta.relative_path))
 
       # I think this is safe since it's a URL, not an actual file
       children[meta.relative_path][:source] = source + "/" + meta.relative_path
-      replace_metadata(children[meta.relative_path], meta)
+      replace_metadata(host, children[meta.relative_path], meta)
     end
 
     children

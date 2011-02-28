@@ -22,8 +22,9 @@ Puppet::Interface::Catalog.action :download do |*args|
 
     checksum = resource[:content]
 
-    Puppet.notice "Downloading content for #{resource} from '#{checksum}'"
-    bucket.download(checksum)
+    if bucket.download(checksum)
+      Puppet.notice "Downloaded content for #{resource} from '#{checksum}'"
+    end
   end
   nil
 end

@@ -1,5 +1,7 @@
 Puppet Static Compiler
 ======================
+**Note: This has been merged into Puppet core, so this repo is no longer maintained, although it should work fine with 2.6.x.**
+
 This is a prototype project to create a new kind of compiler for Puppet - one
 that produces catalogs that are entirely static and require no communication
 between client and server during the catalog runs.  There are a few goals with
